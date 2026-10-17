@@ -16,7 +16,7 @@ Usage: mcp-memory [serve] [options]
        mcp-memory backup --db /path/memory.sqlite3 --output /existing/folder/backup.sqlite3
 
   --db PATH                 Database path (default: XDG data home/mcp-memory/memory.sqlite3)
-  --workspace PATH          Bind project scope (default: current directory)
+  --workspace PATH          Bind project scope (default: gateway workspace or current directory)
   --client NAME             Trusted client attribution (default: unknown)
   --session ID              Optional host-provided session attribution
   --model NAME              Optional host-provided agent model attribution
@@ -73,7 +73,7 @@ async function main(): Promise<void> {
   if (values.embeddings === 'local' && (!revision || !/^[a-f0-9]{40}$/u.test(revision))) {
     throw new Error('Local embeddings require an immutable 40-character model revision SHA');
   }
-  const store = new MemoryStore({ database, project: projectPath(values.workspace ?? process.cwd()),
+  const store = new MemoryStore({ database, project: projectPath(values.workspace ?? process.env.MCP_GATEWAY_WORKSPACE ?? process.cwd()),
     origin: { client: attribution(values.client) ?? 'unknown', session: attribution(values.session), model: attribution(values.model) },
     allowWrite: values['allow-write'], allowGlobalWrite: values['allow-global-write'], readGlobal: !values['no-global-read'],
   });

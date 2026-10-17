@@ -1,18 +1,22 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { ZodError } from 'zod';
+import { MEMORY_URI, registerNativeUI } from './native-ui.js';
 import { MemoryService } from './service.js';
 import { MAX_RESPONSE_BYTES, responseBytes, toolResult } from './response.js';
 import { addSchema, archiveSchema, feedbackSchema, getSchema, searchSchema, supersedeSchema, InputError } from './types.js';
 
-export const VERSION = '0.1.0';
+export const VERSION = '0.2.0';
 
 export function createServer(service: MemoryService): McpServer {
   const server = new McpServer({ name: 'mcp-memory', version: VERSION }, { maxToolInputElements: 100 });
-  const call = async (fn: () => unknown | Promise<unknown>, signal: AbortSignal) => {
+  registerNativeUI(server,service.store);
+  const call = async (fn: () => unknown | Promise<unknown>, signal: AbortSignal, changed = false) => {
     try {
       signal.throwIfAborted();
       const result = await fn();
       if (responseBytes(result) > MAX_RESPONSE_BYTES) throw new InputError('Response exceeds the output budget; narrow the search');
+      // A disconnected UI must never turn a committed mutation into a failed tool.
+      if (changed) await server.server.notification({ method: 'notifications/native-ui/changed',params: { uri: MEMORY_URI } }).catch(() => undefined);
       return toolResult(result);
     } catch (error) {
       const message = error instanceof InputError ? error.message
@@ -34,15 +38,15 @@ export function createServer(service: MemoryService): McpServer {
   server.registerTool('memory_add', {
     description: 'Save a concise reusable memory with supporting evidence. Requires launch-authorized writes; global writes need separate permission. Exact normalized active duplicates return their existing ID without changing evidence.',
     inputSchema: addSchema, annotations: { ...annotations, idempotentHint: true },
-  }, (args,extra) => call(() => service.store.add(args),extra.signal));
+  }, (args,extra) => call(() => service.store.add(args),extra.signal,true));
   server.registerTool('memory_supersede', {
     description: 'Atomically archive an active memory and create its corrected replacement in the same scope. Requires launch-authorized writes. The replacement starts with fresh retrieval/feedback statistics.',
     inputSchema: supersedeSchema, annotations: { ...annotations, destructiveHint: true, idempotentHint: false },
-  }, (args,extra) => call(() => service.store.supersede(args),extra.signal));
+  }, (args,extra) => call(() => service.store.supersede(args),extra.signal,true));
   server.registerTool('memory_archive', {
     description: 'Exclude a memory from future searches without deleting its content or history. Requires launch-authorized writes.',
     inputSchema: archiveSchema, annotations: { ...annotations, destructiveHint: true, idempotentHint: true },
-  }, (args,extra) => call(() => service.store.archive(args),extra.signal));
+  }, (args,extra) => call(() => service.store.archive(args),extra.signal,true));
   server.registerTool('memory_feedback', {
     description: 'Report whether a memory was useful, not useful, incorrect, or outdated. No task ID needed. Feedback is an append-only assessment, not automatic verification or permission to modify the memory. Submit once per assessment; retries add reports.',
     inputSchema: feedbackSchema, annotations: { ...annotations, idempotentHint: false },

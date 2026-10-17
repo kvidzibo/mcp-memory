@@ -206,6 +206,15 @@ export class MemoryStore {
       ORDER BY bm25(memory_search_index,0,4,1),m.id LIMIT ?`).all(match,...ids,limit).map(row => Number(row.id));
   }
 
+  /** Metadata-only snapshot: never loads lesson content or records a retrieval. */
+  counts(): { project: number; global: number | null } {
+    const ids = this.scopeIds();
+    const rows = this.db.prepare(`SELECT scope_id,count(*) AS total FROM memories
+      WHERE status='active' AND scope_id IN (${ids.map(() => '?').join(',')}) GROUP BY scope_id`).all(...ids);
+    const count = (id: number) => Number(rows.find(row => row.scope_id === id)?.total ?? 0);
+    return { project: count(this.projectId), global: this.options.readGlobal ? count(this.globalId) : null };
+  }
+
   active(scope: 'project' | 'global' | 'all'): Memory[] {
     const ids = this.scopeIds(scope);
     return this.db.prepare(`SELECT id FROM memories WHERE status='active' AND scope_id IN (${ids.map(() => '?').join(',')}) ORDER BY id`)
