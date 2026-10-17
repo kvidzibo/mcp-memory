@@ -1,0 +1,46 @@
+{
+  "name": "@kvidzibo/mcp-memory",
+  "version": "0.1.0",
+  "description": "Local-first MCP memory with optional semantic search, retrieval tracking, and feedback",
+  "license": "MIT",
+  "type": "module",
+  "private": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kvidzibo/mcp-memory.git"
+  },
+  "homepage": "https://github.com/kvidzibo/mcp-memory#readme",
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "bin": {
+    "mcp-memory": "dist/src/cli.js"
+  },
+  "files": [
+    "dist/src",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "check": "tsc --noEmit",
+    "test": "npm run build && node --test dist/tests/*.test.js",
+    "prepack": "npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "zod": "^4.6.7"
+  },
+  "peerDependencies": {
+    "@huggingface/transformers": ">=3.8.0 <5"
+  },
+  "peerDependenciesMeta": {
+    "@huggingface/transformers": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.0",
+    "typescript": "^5.9.3"
+  }
+}
