@@ -1,6 +1,6 @@
 {
   "name": "@kvidzibo/mcp-memory",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Local-first MCP memory with optional semantic search, retrieval tracking, and feedback",
   "license": "MIT",
   "type": "module",

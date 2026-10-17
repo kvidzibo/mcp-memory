@@ -4,7 +4,7 @@
 
 Local-first memory for coding assistants over MCP stdio. A fresh SQLite database stores project/global lessons, evidence, immutable replacements, retrieval counts, and agent feedback. Keyword search works without a model; local semantic search is optional. No task tracking, transcript harvesting, background model calls, or automatic deletion based on feedback.
 
-Version **0.1.0** is an initial, unpublished package. No dependency on Pi or pi-mem and no legacy database import.
+Version **0.2.0** is unpublished. No dependency on Pi or pi-mem and no legacy database import.
 
 ## Setup
 
@@ -36,6 +36,32 @@ Run directly, or configure an MCP client to launch the compiled executable. Exam
 ```
 
 The existing stdio MCP gateway can launch this same entry without a Pi-specific extension. Nothing installs or changes active assistant configuration automatically. No HTTP listener or shared daemon is started.
+
+### Gateway footer
+
+With the gateway's Pi adapter, memory supplies a separate **`🧠 project|global`** footer (for example, `🧠 12|8`). Counts include only active lessons in the launch-bound project and readable global scope, not archived lessons or other projects. Disabled global reads display `-`, not zero. No token estimates are shown.
+
+Click the indicator for a display-only scope/count/permission summary; `/pi-services` → memory opens the same overview, with Ctrl+R to refresh. The overview reads metadata only: it does not load lesson text or record retrievals. Local saves, replacements and archives notify the host; the host also refreshes after tool calls. Other processes' changes appear on the next tool call or manual refresh—there is no background polling. A disconnect clears the indicator rather than leaving stale counts.
+
+Gateway **0.24.0+** supplies `MCP_GATEWAY_WORKSPACE` from its launch directory (the Pi adapter uses the session workspace). Omit `--workspace` in a shared gateway configuration to use that value; otherwise explicitly set the project path. `--workspace` takes precedence, followed by this environment variable, then the child working directory. Do not rely on the child working directory matching Pi: the gateway defaults it to the config directory.
+
+Merge a service entry into the gateway's `mcpServers` map after building memory:
+
+```json
+{
+  "memory": {
+    "command": "node",
+    "args": [
+      "/absolute/path/to/mcp-memory/dist/src/cli.js",
+      "--db", "/absolute/path/to/private/memory.sqlite3",
+      "--client", "pi",
+      "--allow-write"
+    ]
+  }
+}
+```
+
+This enables project lesson writes, not global writes. Keyword search is the default. This optional native terminal UI protocol is served over MCP resources; ordinary clients need no Pi dependency and can ignore it. There is no automatic recall, legacy import, or activation/configuration change.
 
 ## Permissions and scope
 
@@ -159,7 +185,7 @@ npm audit
 npm pack --dry-run
 ```
 
-Tests use disposable databases and real MCP stdio clients, including concurrent writers, scope isolation, replacements, telemetry, feedback, backup recovery, and optional semantic behavior with an injected deterministic embedder. Normal tests require no models/downloads and do not touch personal memory. No assistant UI is included.
+Tests use disposable databases and real MCP stdio clients, including concurrent writers, scope isolation, replacements, telemetry, feedback, backup recovery, and optional semantic behavior with an injected deterministic embedder. Normal tests require no models/downloads and do not touch personal memory. The optional gateway overview/count resource and read-only details action are also exercised over real stdio.
 
 ## License
 
