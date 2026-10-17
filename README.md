@@ -43,7 +43,7 @@ With the gateway's Pi adapter, memory supplies a separate **`🧠 project|global
 
 Click the indicator for a display-only scope/count/permission summary; `/pi-services` → memory opens the same overview, with Ctrl+R to refresh. The overview reads metadata only: it does not load lesson text or record retrievals. Local saves, replacements and archives notify the host; the host also refreshes after tool calls. Other processes' changes appear on the next tool call or manual refresh—there is no background polling. A disconnect clears the indicator rather than leaving stale counts.
 
-Gateway **0.23.0+** supplies `MCP_GATEWAY_WORKSPACE` from its launch directory (the Pi adapter uses the session workspace). Omit `--workspace` in a shared gateway configuration to use that value; otherwise explicitly set the project path. `--workspace` takes precedence, followed by this environment variable, then the child working directory. Do not rely on the child working directory matching Pi: the gateway defaults it to the config directory.
+Gateway **0.24.0+** supplies `MCP_GATEWAY_WORKSPACE` from its launch directory (the Pi adapter uses the session workspace). Omit `--workspace` in a shared gateway configuration to use that value; otherwise explicitly set the project path. `--workspace` takes precedence, followed by this environment variable, then the child working directory. Do not rely on the child working directory matching Pi: the gateway defaults it to the config directory.
 
 Merge a service entry into the gateway's `mcpServers` map after building memory:
 

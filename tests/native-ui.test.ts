@@ -7,6 +7,10 @@ import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
+import { createServer } from '../src/server.js';
+import { MemoryStore } from '../src/store.js';
+import { MemoryService } from '../src/service.js';
 import { z } from 'zod';
 import { MEMORY_URI, UI_MIME } from '../src/native-ui.js';
 
@@ -19,7 +23,8 @@ test('native memory footer counts active accessible scopes without retrievals an
   const other = join(directory,'other'); mkdirSync(other);
   const database = join(directory,'memory.sqlite3');
   const clients: Client[] = [];
-  t.after(async () => { await Promise.all(clients.map(client => client.close())); rmSync(directory,{ recursive: true,force: true }); });
+  const stores: MemoryStore[] = [];
+  t.after(async () => { await Promise.all(clients.map(client => client.close())); stores.forEach(store => store.close()); rmSync(directory,{ recursive: true,force: true }); });
   const connect = async (args: string[] = []) => {
     const client = new Client({ name: 'footer-test',version: '1' }); clients.push(client);
     await client.connect(new StdioClientTransport({ command: process.execPath,
@@ -68,6 +73,15 @@ test('native memory footer counts active accessible scopes without retrievals an
   for (const bad of [{ ...action,uri: 'memory://elsewhere' },{ ...action,action: 'archive' },{ ...action,value: 1 }]) {
     await assert.rejects(first.request({ method: 'native-ui/action',params: bad },z.any()));
   }
+  const store = new MemoryStore({ database,project: workspace,origin: { client: 'notification-test',session: null,model: null },allowWrite: true,allowGlobalWrite: false,readGlobal: true });
+  stores.push(store);
+  const server = createServer(new MemoryService(store));
+  const [serverTransport,clientTransport] = InMemoryTransport.createLinkedPair();
+  const local = new Client({ name: 'notification-test',version: '1' }); clients.push(local);
+  await Promise.all([server.connect(serverTransport),local.connect(clientTransport)]);
+  server.server.notification = async () => { throw new Error('Injected notification transport failure'); };
+  await call(local,'memory_add',{ ...input,text: 'Keep committed writes successful if the UI disconnects.' });
+  assert.equal((await read(local)).footer[0].text,'🧠 1|1','A failed UI notification does not roll back or misreport the save');
   const db = new DatabaseSync(database,{ readOnly: true });
   try { assert.equal(db.prepare('SELECT count(*) AS n FROM memory_retrievals').get()!.n,0); }
   finally { db.close(); }
