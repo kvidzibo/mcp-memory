@@ -16,7 +16,7 @@ npm run build
 node dist/src/cli.js --help
 ```
 
-Run directly, or configure an MCP client to launch the compiled executable. Example configuration (the exact wrapper depends on your client):
+The executable is an MCP stdio server, not an interactive memory CLI. Let an MCP client launch it; stdout is protocol-only and diagnostics go to stderr. Example configuration (the exact wrapper depends on your client):
 
 ```json
 {
@@ -66,7 +66,7 @@ This enables project lesson writes, not global writes. Keyword search is the def
 ## Permissions and scope
 
 - **Lesson mutations are disabled by default.** `--allow-write` enables immediate project saves, replacements, and archives. There is no pending queue or approval dialog.
-- Global lessons are readable by default; use `--no-global-read` to exclude them. Global mutations additionally require `--allow-global-write`.
+- Global lessons are readable by default; use `--no-global-read` to exclude them. Global mutations additionally require `--allow-global-write` with `--allow-write` and global reads enabled; combining it with `--no-global-read` fails at startup.
 - Retrieval telemetry and feedback still write to SQLite when lesson mutations are disabled; this is not a filesystem-read-only mode.
 - Workspace and capabilities are bound at launch, not arbitrary tool-provided paths. Tool scope selectors can only narrow the allowed scope.
 - Project scope uses the canonical main Git checkout: linked worktrees share memory; submodules remain separate. Outside Git it is the canonical workspace directory. Separate clones are separate scopes. Broken/ambiguous repository identity fails rather than guessing another scope.
