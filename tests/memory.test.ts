@@ -7,6 +7,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { execFileSync } from 'node:child_process';
 import { MemoryStore } from '../src/store.js';
 import { MemoryService, MAX_RESPONSE_BYTES } from '../src/service.js';
+import { responseBytes } from '../src/response.js';
 import { cosineSimilarity, validateVector } from '../src/embeddings.js';
 import { projectPath } from '../src/project.js';
 import { backupDatabase } from '../src/backup.js';
@@ -151,7 +152,7 @@ test('search limits output, treats FTS syntax as text, and rejects malformed inp
     evidence: [{ description: 'y'.repeat(1000),source_uri: 'z'.repeat(2000) }] });
   const result = await service.search({ query: 'testing',limit: 50 });
   assert.equal(result.truncated,true);
-  assert.ok(Buffer.byteLength(JSON.stringify(result)) <= MAX_RESPONSE_BYTES);
+  assert.ok(responseBytes(result) <= MAX_RESPONSE_BYTES);
   assert.equal(result.results.reduce((count,item) => count+item.retrieval_count,0),result.results.length);
   await service.search({ query: '" OR NEAR() * NOT' });
   await assert.rejects(service.search({ query: 'testing',limit: 999 }));

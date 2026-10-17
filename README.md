@@ -61,7 +61,7 @@ All record IDs are positive safe integers. Unknown input properties and string I
 | `memory_archive` | `id`, optional `reason` | Exclude from future search; preserve the record/history |
 | `memory_feedback` | `memory_id`, `verdict`, optional `reason` | Append an assessment; no task/session requirement |
 
-Evidence is an array of 1–5 objects containing `description` and optional `source_uri`. References are stored, not fetched or verified. Maximum UTF-8 sizes: memory text 2,000 bytes; each evidence description, reason and query 1,000 bytes; source URI 2,048 bytes. Tool response JSON is bounded to 64 KiB; search reports `truncated`, and get can omit older history/feedback to fit. Search evaluates up to 100 candidates from each ranking; narrow the query rather than expecting exhaustive browsing.
+Evidence is an array of 1–5 objects containing `description` and optional `source_uri`. References are stored, not fetched or verified. Maximum UTF-8 sizes: memory text 2,000 bytes; each evidence description, reason and query 1,000 bytes; source URI 2,048 bytes. The complete MCP tool-result JSON (text plus structured output) is bounded to 128 KiB; search reports `truncated`, and get can omit older history/feedback to fit. Search evaluates up to 100 candidates from each ranking; narrow the query rather than expecting exhaustive browsing.
 
 ```json
 {
@@ -105,7 +105,7 @@ node dist/src/cli.js --workspace /path/to/project --db /private/memory.sqlite3 \
   --embeddings local --embedding-cache /private/model-cache --allow-model-download
 ```
 
-Subsequent runs can omit `--allow-model-download` and reuse cached files. Without that flag, remote model fetching is disabled. Keyword operations remain available if the optional runtime/model cannot load; search reports a fallback warning. Restart after repairing model-loading configuration.
+Subsequent runs can omit `--allow-model-download` and reuse cached files. Cached-only loading uses the immutable revision's local directory to avoid the runtime's mutable-main tokenizer-discovery probes. Without that flag, remote model fetching is disabled. Keyword operations remain available if the optional runtime/model cannot load; search reports a fallback warning. Restart after repairing model-loading configuration.
 
 The default is CPU q8 **`Xenova/bge-small-en-v1.5`**, pinned to commit `ea104dacec62c0de699686887e3f920caeb4f3e3`. Quantized weights are roughly 35 MB; runtime dependencies/cache add overhead. Text and evidence are embedded locally; long input is subject to the model's token limit. A query-specific BGE instruction prefix is applied automatically.
 

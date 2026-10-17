@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { MAX_RESPONSE_BYTES } from '../src/response.js';
 
 const cli = fileURLToPath(new URL('../src/cli.js',import.meta.url));
 
@@ -56,6 +57,14 @@ test('real stdio clients exercise strict tools, concurrent writers, retrieval st
   const archived = await call(readOnly,'memory_get',{ id });
   assert.equal(archived.status,'archived');
   assert.equal(archived.source_client === 'test-a' || archived.source_client === 'test-b',true);
+  for (let index=0;index<15;index++) await call(first,'memory_add',{
+    text: `Budget ${index}: ${'"'.repeat(1900)}`,
+    evidence: [{ description: '"'.repeat(1000),source_uri: '"'.repeat(2000) }],
+  });
+  const large = await first.callTool({ name: 'memory_search',arguments: { query: 'budget',limit: 50 } });
+  assert.notEqual(large.isError,true);
+  assert.equal((large.structuredContent as Record<string,unknown>).truncated,true);
+  assert.ok(Buffer.byteLength(JSON.stringify(large),'utf8') <= MAX_RESPONSE_BYTES);
 });
 
 test('CLI help is standalone and invalid startup options fail without protocol noise', () => {

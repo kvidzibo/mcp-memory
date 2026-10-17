@@ -1,6 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { ZodError } from 'zod';
-import { MemoryService, MAX_RESPONSE_BYTES } from './service.js';
+import { MemoryService } from './service.js';
+import { MAX_RESPONSE_BYTES, responseBytes, toolResult } from './response.js';
 import { addSchema, archiveSchema, feedbackSchema, getSchema, searchSchema, supersedeSchema, InputError } from './types.js';
 
 export const VERSION = '0.1.0';
@@ -11,9 +12,8 @@ export function createServer(service: MemoryService): McpServer {
     try {
       signal.throwIfAborted();
       const result = await fn();
-      const text = JSON.stringify(result);
-      if (Buffer.byteLength(text,'utf8') > MAX_RESPONSE_BYTES) throw new InputError('Response exceeds the output budget; narrow the search');
-      return { content: [{ type: 'text' as const, text }], structuredContent: result as Record<string,unknown> };
+      if (responseBytes(result) > MAX_RESPONSE_BYTES) throw new InputError('Response exceeds the output budget; narrow the search');
+      return toolResult(result);
     } catch (error) {
       const message = error instanceof InputError ? error.message
         : error instanceof ZodError ? 'Invalid tool arguments'

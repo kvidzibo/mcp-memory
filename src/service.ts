@@ -2,7 +2,8 @@ import { type Embedder, cosineSimilarity, validateVector } from './embeddings.js
 import { MemoryStore, embeddingContent } from './store.js';
 import { getSchema, searchSchema, type Memory, type Statistics } from './types.js';
 
-export const MAX_RESPONSE_BYTES = 65536;
+import { MAX_RESPONSE_BYTES, responseBytes } from './response.js';
+export { MAX_RESPONSE_BYTES } from './response.js';
 
 /** Keyword relevance and semantic relevance have different scales; fuse their ranks. */
 export function fuseRanks(lists: number[][]): number[] {
@@ -65,7 +66,7 @@ export class MemoryService {
       // A different process can archive a memory while embeddings are being computed.
       if (memory.status !== 'active') continue;
       if (results.length >= input.limit) { truncated = true; break; }
-      if (Buffer.byteLength(JSON.stringify([...results,memory]),'utf8') > MAX_RESPONSE_BYTES-2048) {
+      if (responseBytes({ mode,warning,results: [...results,memory],truncated: true,request_id: Number.MAX_SAFE_INTEGER }) > MAX_RESPONSE_BYTES-2048) {
         truncated = true; break;
       }
       results.push(memory);
@@ -81,7 +82,7 @@ export class MemoryService {
     const { id } = getSchema.parse(raw);
     const memory = this.store.get(id);
     let truncated = false;
-    while (Buffer.byteLength(JSON.stringify(memory),'utf8') > MAX_RESPONSE_BYTES-2048) {
+    while (responseBytes({ ...memory,truncated: true,request_id: Number.MAX_SAFE_INTEGER }) > MAX_RESPONSE_BYTES-2048) {
       if (memory.feedback.length) memory.feedback.pop();
       else if (memory.history.length) memory.history.pop();
       else throw new Error('Memory exceeds the output budget');
